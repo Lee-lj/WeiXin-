@@ -1,0 +1,97 @@
+模板消息仅用于公众号向用户发送重要的服务通知，只能用于符合其要求的服务场景中，如信用卡刷卡通知，商品购买成功通知等。不支持广告等营销类消息以及其它所有可能对用户造成骚扰的消息。
+见TemplateMessageManager
+关于接口文档，请注意：
+
+模板消息调用时主要需要模板ID和模板中各参数的赋值内容；
+模板中参数内容必须以".DATA"结尾，否则视为保留字；
+模板保留符号""。
+
+必须设置行业才能使用模板消息:例如会员卡的变更，签到成功的通知等等
+模板消息设置得从微信模板消息库中提取
+获得模板ID
+从行业模板库选择模板到帐号后台，获得模板ID的过程可在微信公众平台后台完成。为方便第三方开发者，提供通过接口调用的方式来获取模板ID，具体如下：
+接口调用请求说明
+http请求方式: POST https://api.weixin.qq.com/cgi-bin/template/api_add_template?access_token=ACCESS_TOKEN
+POST数据说明
+POST数据示例如下：
+{
+    "template_id_short":"TM00015"
+ }
+
+ 发送模板消息
+接口调用请求说明
+
+http请求方式: POST https://api.weixin.qq.com/cgi-bin/message/template/send?access_token=ACCESS_TOKEN
+
+
+
+
+POST数据说明
+
+POST数据示例如下：
+
+      {
+           "touser":"oj3Wo1T_Bb97sCTFylTV4l15SDWk",
+           "template_id":"	K0AxZcIx9P3o-Z3SO1aRCKtSg6Vi2EgBK3vxql-N_rY",
+           "url":"http://weixin.qq.com/download", //点击这个消息之后跳转到的地址          
+           "data":{
+                   "first": {
+                       "value":"您已被成功录用！",
+                       "color":"#dadsad"
+                   },
+                   "company":{
+                       "value":"阿里巴巴",
+                       "color":"#369456"
+                   },
+                   "time": {
+                       "value":"2020/8/11",
+                       "color":"#174080"
+                   },
+                   "result": {
+                       "value":"30K",
+                       "color":"#258369"
+                   },
+                   "remark":{
+                       "value":"请及时致电！",
+                       "color":"#235689"
+                   }
+           }
+       }
+       
+       
+       
+       @Test
+	//发送模板消息
+	public void sendTemplateMessage() {
+		String as=WeiXinService.getAccessToken();
+		String url="https://api.weixin.qq.com/cgi-bin/message/template/send?access_token="+as;//带token发送post请求
+		//touser指定了向谁发送，面向对象时肯定为触发了某一条件的人的微信号
+		String data="{\n" + 
+				"           \"touser\":\"oj3Wo1T_Bb97sCTFylTV4l15SDWk\",\n" + 
+				"           \"template_id\":\"K0AxZcIx9P3o-Z3SO1aRCKtSg6Vi2EgBK3vxql-N_rY\",         \n" + 
+				"           \"data\":{\n" + 
+				"                   \"first\": {\n" + 
+				"                       \"value\":\"您已被成功录用！\",\n" + 
+				"                       \"color\":\"#abcdef\"\n" + 
+				"                   },\n" + 
+				"                   \"companY\":{\n" + 
+				"                       \"value\":\"阿里巴巴\",\n" + 
+				"                       \"color\":\"#fff000\"\n" + 
+				"                   },\n" + 
+				"                   \"time\": {\n" + 
+				"                       \"value\":\"2020/8/11\",\n" + 
+				"                       \"color\":\"#1f1f1f\"\n" + 
+				"                   },\n" + 
+				"                   \"result\": {\n" + 
+				"                       \"value\":\"30K\",\n" + 
+				"                       \"color\":\"#173177\"\n" + 
+				"                   },\n" + 
+				"                   \"remark\":{\n" + 
+				"                       \"value\":\"请及时致电！\",\n" + 
+				"                       \"color\":\"#173177\"\n" + 
+				"                   }\n" + 
+				"           }\n" + 
+				"       }";
+		String result = Robot.post(url, data);
+		System.out.print(result);
+	}成功

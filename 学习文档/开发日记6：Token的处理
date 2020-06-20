@@ -1,0 +1,63 @@
+access_token是公众号的全局唯一接口调用凭据，公众号调用各接口时都需使用access_token。
+开发者需要进行妥善保存。access_token的存储至少要保留512个字符空间。access_token的有效期目前为2个小时，需定时刷新，重复获取将导致上次获取的access_token失效。
+
+AnswerRobot中的.net方法可以获取token，自己写的获取Token的方法为getToken：
+//向指定的地址发送get请求
+	    public static String getToken(String url) {//输入url，获取微信的token
+	    	try {
+				URL urlObj=new URL(url);
+				URLConnection openConnection = urlObj.openConnection();//开启链接
+				InputStream inputStream = openConnection.getInputStream();
+				byte[] b=new byte[1024];
+				int len;
+				StringBuilder sb=new StringBuilder();
+				while ((len=inputStream.read(b))!=-1) {
+					sb.append(new String(b,0,len));
+				}
+				return sb.toString();
+			} catch (Exception e) {
+				
+				e.printStackTrace();
+			}
+	    	return null;
+	    }
+	    
+	    WeiXinService中配置固定的Token_url的地址以及APPID,APPSERECT,以及获取token的方法(getToken)
+	        private static final String GET_TOKEN_URL="https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=APPID&secret=APPSECRET";
+	        //APPID  APPSECRET 写上自己的id以及密码
+	        private static final String APPID="wxd585d1eb4ecd5c26";
+	        private static final String APPSERECT="ffcd5732ae66a5d9d959f804e745d833";
+	        //将token存储起来
+	        private static AccessToken at;
+	    
+	    getToken:
+	        private static void getToken() {//这个方法获取的Token并不能直接提供给其他方法使用
+	            String url=GET_TOKEN_URL.replace("APPID",APPID).replace("APPSECRET", APPSECRET);
+	            String token2 = AnswerRobot.getToken(url);
+	            JSONObject jsonObject = JSONObject.fromObject(token2);
+	            String token = jsonObject.getString("access_token");//获取token，将其封装在AccessToken类中
+	            String expiresIn = jsonObject.getString("expires_in");
+	            at = new AccessToken(token, expiresIn);//创建token对象并存储
+	        }
+	
+	        //使外部的可以获取token的方法
+	        public static String getAccessToken() {
+	        	if(at==null||at.expried()) {
+	        		getToken();
+	        	}
+		        	return at.getAccessToken();
+	        }
+	        
+	   因为一个Token只有两个小时的生命周期，建立AccessToken存放获取到的token，然后使用token获取的时间加上当前时间判断是否token过期。
+	   
+	   @Test//测试获取token
+	public void testGetToken() {
+		System.out.println(WeiXinService.getAccessToken());
+		System.out.println(WeiXinService.getAccessToken());
+	}测试后发现获取的是同一个token，所以成功
+	        
+	        
+	        
+	        
+	        
+	        

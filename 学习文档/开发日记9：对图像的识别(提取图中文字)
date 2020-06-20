@@ -1,0 +1,100 @@
+基于在自定义菜单时创建了子菜单的传图功能，此日记使用方法提取图中文字并返回（使用到了ai.baidu.com）的接口
+1.传图之后本地接收到的数据包如下:
+PicUrl的地址网页打开后就是传过来的图像
+{MediaId=pE7Su3SYaX9Cu_ae-MQxJ8mqBBhrJ3ROQOD6-j3_rWSPeTNi3WouFGgNUWiPNa4f, 
+CreateTime=1591878820, 
+ToUserName=gh_ab43150239a0, 
+FromUserName=oj3Wo1T_Bb97sCTFylTV4l15SDWk, 
+MsgType=image, 
+PicUrl=http://mmbiz.qpic.cn/sz_mmbiz_jpg/udYXuNKZOgiavTiaKf71WPRADgBBFTEZV5UIup91HKMcr9fn7fm3SZMkpJBBAGibic8LS5LiaU7GnKQDvtCZhrvRkPg/0, 
+MsgId=22790223308289021
+}
+
+测试方法:
+//提取图中文字的测试类，设置APPID/AK/SK
+    public static final String APP_ID = "20354849";
+    public static final String API_KEY = "KsgB5GbiT5f8NRxCSYGyA0Zn";
+    public static final String SECRET_KEY = "ztib9oYiLIFBMaYiZBebj52T8uD7UXZt";
+	
+	@Test//提取图中文字的测试类
+	public void testImage() {
+		// 初始化一个AipOcr
+        AipOcr client = new AipOcr(APP_ID, API_KEY, SECRET_KEY);
+
+        // 可选：设置网络连接参数
+        client.setConnectionTimeoutInMillis(2000);
+        client.setSocketTimeoutInMillis(60000);
+
+        // 可选：设置代理服务器地址, http和socket二选一，或者均不设置
+        //client.setHttpProxy("proxy_host", proxy_port);  // 设置http代理
+        //client.setSocketProxy("proxy_host", proxy_port);  // 设置socket代理
+
+        // 可选：设置log4j日志输出格式，若不设置，则使用默认配置
+        // 也可以直接通过jvm启动参数设置此环境变量
+        //System.setProperty("aip.log4j.conf", "path/to/your/log4j.properties");
+
+        // 调用接口
+        String path = "D:\\1.png";
+        org.json.JSONObject res = client.basicGeneral(path, new HashMap<String, String>());
+        System.out.println(res.toString(2));
+}得到结果         :
+
+{
+  "log_id": 1606387164134313387,
+  "words_result": [
+    {"words": "我们在日常生活工作当中经常会用到截图功能,最常用的是QQ、微信等工具,但是需要登录才"},
+    {"words": "能使用,如果没有网络就尴尬了。今天教大家win10快速截图的方法,方便快捷,告别第三方软"},
+    {"words": "件的限制"}
+  ],
+  "words_result_num": 3
+}
+
+正式方法
+Service:
+
+         switch(MsgType):
+         public static String getResponse(Map<String,String> requestMap) {
+		BaseMessage msg=null;
+		String msgType = requestMap.get("MsgType");
+		switch (msgType) {//分类处理消息的类型
+		//此方法专门处理文本消息
+		case "text":
+            msg=dealTextMessage(requestMap);
+			break;
+		case "image"://图片消息
+            msg=dealImageMessage(requestMap);
+         
+     //处理图片消息，对图片进行识别
+	private static BaseMessage dealImageMessage(Map<String, String> requestMap) {
+		// 初始化一个AipOcr
+        AipOcr client = new AipOcr(APP_ID, API_KEY, SECRET_KEY);
+
+        // 可选：设置网络连接参数
+        client.setConnectionTimeoutInMillis(2000);
+        client.setSocketTimeoutInMillis(60000);
+
+        // 可选：设置代理服务器地址, http和socket二选一，或者均不设置
+        //client.setHttpProxy("proxy_host", proxy_port);  // 设置http代理
+        //client.setSocketProxy("proxy_host", proxy_port);  // 设置socket代理
+
+        // 可选：设置log4j日志输出格式，若不设置，则使用默认配置
+        // 也可以直接通过jvm启动参数设置此环境变量
+        //System.setProperty("aip.log4j.conf", "path/to/your/log4j.properties");
+
+        // 调用接口
+        String path=requestMap.get("PicUrl");              //String path = "D:\\1.png";这就只能返回这一张固定图片上的文字，无论发来的是什么图片
+        //org.json.JSONObject res = client.basicGeneral(path, new HashMap<String, String>());这种方法只能取本地的图片，取不了网络上发来的图片
+        //输出格式得转换为json然后返回给微信
+        org.json.JSONObject res = client.basicGeneral(path, new HashMap<String,String>());//这种方法可以取用网络上直接发过来的图片
+        String json=res.toString();
+        //转换为JSONobject
+        JSONObject imjson = JSONObject.fromObject(json);
+        JSONArray jsonArray = imjson.getJSONArray("words_result");
+        Iterator<JSONObject> it = jsonArray.iterator();//对json结果进行遍历
+        StringBuilder sb=new StringBuilder();
+        while(it.hasNext()) {
+        	JSONObject next=it.next();
+        	sb.append(next.getString("words"));
+        }
+		return new TextMessage(requestMap, sb.toString());
+	}完成

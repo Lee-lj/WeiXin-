@@ -1,0 +1,72 @@
+如果用户在微信客户端中访问第三方网页，公众号可以通过微信网页授权机制，来获取用户基本信息，进而实现业务逻辑。
+
+关于网页授权的两种scope的区别说明
+1、以snsapi_base为scope发起的网页授权，是用来获取进入页面的用户的openid的，并且是静默授权并自动跳转到回调页的。用户感知的就是直接进入了回调页（往往是业务页面）
+2、以snsapi_userinfo为scope发起的网页授权，是用来获取用户的基本信息的。但这种授权需要用户手动同意，并且由于用户同意过，所以无须关注，就可在授权后获取该用户的基本信息。
+3、用户管理类接口中的“获取用户基本信息接口”，是在用户和公众号产生消息交互或关注后事件推送后，才能根据用户OpenID来获取用户基本信息。这个接口，包括其他微信接口，都是需要该用户（即openid）关注了公众号后，才能调用成功的。
+
+具体而言，网页授权流程分为四步：
+1、引导用户进入授权页面同意授权，获取code
+2、通过code换取网页授权access_token（与基础支持中的access_token不同）
+3、如果需要，开发者可以刷新网页授权access_token，避免过期
+4、通过网页授权access_token和openid获取用户基本信息（支持UnionID机制）
+
+参数	是否必须	说明
+appid	是	公众号的唯一标识(自己公众号的appid)
+redirect_uri	是	授权后重定向的回调链接地址， 请使用 urlEncode 对链接进行处理
+response_type	是	返回类型，请填写code
+scope	是	应用授权作用域，snsapi_base （不弹出授权页面，直接跳转，只能获取用户openid），snsapi_userinfo （弹出授权页面，可通过openid拿到昵称、性别、所在地。并且， 即使在未关注的情况下，只要用户授权，也能获取其信息 ）
+state	否	重定向后会带上state参数，开发者可以填写a-zA-Z0-9的参数值，最多128字节
+#wechat_redirect	是	无论直接打开还是做页面302重定向时候，必须带此参数
+
+需要将点击跳转的地址的二级域名比如www.idcfengye.com保存在OAuth2.0网页授权中(idcfengye.com由于违规已经不能使用，得在阿里云购买域名，解析域名到http://nicelee.free.idcfengye.com 这个地址)
+
+首先WeiXinServie:
+         //处理文本消息
+	private static BaseMessage dealTextMessage(Map<String, String> requestMap) {
+		//用户发来的请求
+		String userMessage=requestMap.get("Content");
+		
+		//处理图文消息
+		if(userMessage.equals("图文")) {//如果微信用户输入"图文"这两个字才会回复
+			//处理图文消息
+			List<Articles> articles=new ArrayList<>();
+			articles.add(new Articles("图文消息的标题","图文消息的详细介绍","http://mmbiz.qpic.cn/sz_mmbiz_jpg/udYXuNKZOggUKKZ4ibZ131JrQPw4QJMuCUWEsDcNyHzaTqN72xatBOZoD8VVib8fPnke6fKzEEl0TF6qEdqtPBWA/0", "http://www.baidu.com"));
+			//接收图片消息会接收到图片的prcurl，目前可以这样取得一个图片	  最后的url就是点击图文消息跳转至哪里
+			NewsMessage nm=new NewsMessage(requestMap,articles);
+			return nm;
+		}
+		if(userMessage.equals("购买")) {//用户发送购买，跳转至外部链接，获取网页授权来获取未关注的用户信息
+			String url="https://open.weixin.qq.com/connect/oauth2/authorize?appid=wxd585d1eb4ecd5c26&redirect_uri=http://nicelee.free.idcfengye.com/weixin/GetUserInf&response_type=code&scope=snsapi_userinfo&state=STATE#wechat_redirect";
+			TextMessage tm=new TextMessage(requestMap, "点击<a href=\""+url+"\">这里</a>购买");
+			return tm;
+			
+		}如果用户输入"购买"就返回一个url，用户点击url，到GetUserInf  Servlet，完成对token的替换，刷新，最后完成对用户信息的收取
+		
+		GetUserInf  Servlet:
+		
+		         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+                 //获取code
+		         String code=request.getParameter("code");
+		         //换取Accesstoken的地址
+		         String url="https://api.weixin.qq.com/sns/oauth2/access_token?appid=APPID&secret=SECRET&code=CODE&grant_type=authorization_code";
+		         url=url.replace("APPID", "wxd585d1eb4ecd5c26").replace("SECRET", "ffcd5732ae66a5d9d959f804e745d833").replace("CODE", code);//APPID,SECRET就是自己公众号的id，密码
+		         String result = Robot.get(url);//取得token等信息，注意token仍是两小时更改，要刷新
+		         String token=JSONObject.fromObject(result).getString("accsess_token");
+		         String openId=JSONObject.fromObject(result).getString("openid");
+		         //拉取用户信息
+		         url="https://api.weixin.qq.com/sns/userinfo?access_token=ACCESS_TOKEN&openid=OPENID&lang=zh_CN";
+		         url=url.replace("ACCESS_TOKEN", token).replace("OPENID", openId);
+		         String result1=Robot.get(url);
+	         }
+	         
+	         完结撒花！！！！！！！！！！！！！
+		
+
+
+
+
+
+
+
+

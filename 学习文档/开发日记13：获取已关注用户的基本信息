@@ -1,0 +1,25 @@
+获取用户基本信息(UnionID机制)
+
+在关注者与公众号产生消息交互后，公众号可获得关注者的OpenID（加密后的微信号，每个用户对每个公众号的OpenID是唯一的。对于不同公众号，同一用户的openid不同）。
+公众号可通过本接口来根据OpenID获取用户基本信息，包括昵称、头像、性别、所在城市、语言和关注时间。
+
+WeiXinService:
+//获取已关注的用户信息
+	public static String getUserInf(String openId) {
+		String url="https://api.weixin.qq.com/cgi-bin/user/info?access_token=ACCESS_TOKEN&openid=OPENID&lang=zh_CN";
+		url=url.replace("ACCESS_TOKEN", getAccessToken()).replace("OPENID", openId);
+		String result=Robot.get(url);
+		return result;
+	}
+	
+
+
+测试方法:
+@Test//测试获取已关注用户信息
+	public void testUserInf() {
+		String user="oj3Wo1T_Bb97sCTFylTV4l15SDWk";//在微信平台上的已关注人的ID
+		String inf = WeiXinService.getUserInf(user);
+		System.out.print(inf);
+	}
+
+{"subscribe":1,"openid":"oj3Wo1T_Bb97sCTFylTV4l15SDWk","nickname":"leeღ","sex":1,"language":"zh_CN","city":"西安","province":"陕西","country":"中国","headimgurl":"http:\/\/thirdwx.qlogo.cn\/mmopen\/iaVP46q9CoDCKNrMN9WicyYJQKNhsvIkETZfdNibeN6IomOZcJdHpeMtX1Va1nQXTwBn5SloSVAYkLsYFseicZakOedjt2j321GK\/132","subscribe_time":1591802432,"remark":"","groupid":0,"tagid_list":[],"subscribe_scene":"ADD_SCENE_QR_CODE","qr_scene":0,"qr_scene_str":""}

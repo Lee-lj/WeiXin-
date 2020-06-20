@@ -1,0 +1,47 @@
+WeiXinService:
+
+    1.将用户发送的消息交给answer方法
+    //处理文本消息
+	private static BaseMessage dealTextMessage(Map<String, String> requestMap) {
+		//用户发来的请求
+		String userMessage=requestMap.get("Content");
+		//调用方法返回聊天的内容
+		String responseMessage=answer(userMessage);
+		TextMessage tm=new TextMessage(requestMap,responseMessage);	
+		return tm;
+		
+    2.WeixinService:
+       answer方法：
+    //智能问答机器人接收用户消息的方法       发送的消息就为UserMessage
+  	private static String answer(String userMessage) {
+  		String result =null;
+        String url ="http://api.avatardata.cn/Tuling/Ask";//请求接口地址
+        Map params = new HashMap();//请求参数
+        params.put("key",APPKEY);//问答机器人申请到的APPKEY
+        params.put("info",userMessage);//要发送给机器人的内容，不超过30个字
+        params.put("dtype","");//返回的数据类型:json或者XML，默认为json
+        params.put("loc","");//地点
+        params.put("lon","");//经度  东经116.234632小数点后保留六位，需要写为116234632
+        params.put("lat","");//纬度   北纬40.234632小数点后保留六位，需要写为40234632
+        params.put("userid","");//1~32位，此userId针对每一个用户，用于上下文关联
+        try {
+            result =AnswerRobot.net(url, params, "GET");
+            System.out.println(result);
+            //解析JSON
+            JSONObject jsonObject = JSONObject.fromObject(result);
+            //取出error_code看有没有出错，出错就返回空值
+            int code = jsonObject.getInt("error_code");
+            if(code!=0) {
+            		return null;
+            }
+            //否则取出机器人返回的消息的内容
+            String responseMessage = jsonObject.getJSONObject("result").getString("text");
+            return responseMessage;
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+		return null;
+	}
+	3.Robot.Answer纯为配置信息。
+		

@@ -1,0 +1,41 @@
+上传的图片
+
+{MediaId=FOIpSDp4n1F998xZv6lvTqozvIrP8cuYknr1hgz-QYbTlec2qUqtYQU67-qT7GkS, 
+CreateTime=1591779290, 
+ToUserName=gh_ab43150239a0, 
+FromUserName=oj3Wo1T_Bb97sCTFylTV4l15SDWk, 
+MsgType=image, 
+PicUrl=http://mmbiz.qpic.cn/sz_mmbiz_jpg/udYXuNKZOggUKKZ4ibZ131JrQPw4QJMuCUWEsDcNyHzaTqN72xatBOZoD8VVib8fPnke6fKzEEl0TF6qEdqtPBWA/0, 
+MsgId=22788796093519154}
+null
+
+
+回复图文消息时:
+
+//处理文本消息
+	private static BaseMessage dealTextMessage(Map<String, String> requestMap) {
+		//用户发来的请求
+		String userMessage=requestMap.get("Content");
+		
+		//处理图文消息
+		if(userMessage.equals("图文")) {//如果微信用户输入"图文"这两个字才会回复,也可以设置其他的，这就是关键字回复
+			//处理图文消息
+			List<Articles> articles=new ArrayList<>();
+			articles.add(new Articles("图文消息的标题","图文消息的详细介绍","http://mmbiz.qpic.cn/sz_mmbiz_jpg/udYXuNKZOggUKKZ4ibZ131JrQPw4QJMuCUWEsDcNyHzaTqN72xatBOZoD8VVib8fPnke6fKzEEl0TF6qEdqtPBWA/0", "http://www.baidu.com"));
+			//接收图片消息会接收到图片的prcurl，目前可以这样取得一个图片	  最后的url就是点击图文消息跳转至哪里
+			NewsMessage nm=new NewsMessage(requestMap,articles);
+			return nm;
+			
+		}
+		//调用方法返回聊天的内容
+		String responseMessage=answer(userMessage);
+		TextMessage tm=new TextMessage(requestMap,responseMessage);	
+		return tm;
+				
+		/*
+		TextMessage tm=new TextMessage(requestMap,"我吐了");
+		return tm;//对文本消息直接回复的消息
+		*/
+	}
+	
+	

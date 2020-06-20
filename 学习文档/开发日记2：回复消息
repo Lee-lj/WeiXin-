@@ -1,0 +1,85 @@
+微信对被动回复消息规定:
+回复文本消息
+<xml>
+  <ToUserName><![CDATA[toUser]]></ToUserName>
+  <FromUserName><![CDATA[fromUser]]></FromUserName>
+  <CreateTime>12345678</CreateTime>
+  <MsgType><![CDATA[text]]></MsgType>
+  <Content><![CDATA[你好]]></Content>
+</xml>
+
+参数	                            是否必须	描述
+ToUserName	         是	接收方帐号（收到的OpenID）
+FromUserName   是	开发者微信号
+CreateTime	         是	消息创建时间 （整型）
+MsgType	                     是	消息类型，文本为text
+Content	                     是	回复的消息内容（换行：在content中能够换行，微信客户端就支持换行显示）
+
+//准备自动回复的数据包(按照官网格式的复杂回复)     第一种方式
+	    String responseXML="<xml>\r\n"+ 
+	    		"<ToUserName><![CDATA["+requestMap.get("FromUserName")+"]]></ToUserName>\r\n"+ 
+	    		"<FromUserName><![CDATA["+requestMap.get("ToUserName")+"]]></FromUserName>\r\n"+ 
+	    		"<CreateTime>"+System.currentTimeMillis()/1000+"</CreateTime>\r\n"+ 
+	    		"<MsgType><![CDATA[text]]></MsgType>\r\n"+ 
+	    		"<Content><![CDATA[why-so-serious?]]></Content>\r\n"+ 
+	    		"</xml>";//ToUserName就是要将数据发给谁，直接从request域中取，FromUserName，就是从哪获取数据,System.currentTimeMillis()就是获取时间，本身为毫秒数所以除以1000
+	    System.out.println(responseXML);
+	    PrintWriter out=response.getWriter();//PrintWriter是java中很常见的一个类，该类可用来创建一个文件并向文本文件写入数据。可以理解为java中的文件输出，java中的文件输入则是java.io.File。
+	    out.print(responseXML);
+        out.flush();//flush是把流里的缓冲数据输出
+        out.close();//close是把这个流关闭了，关闭之前会把缓冲的数据都输出。
+
+<xml>
+  <ToUserName><![CDATA[toUser]]></ToUserName>
+  <FromUserName><![CDATA[fromUser]]></FromUserName>
+  <CreateTime>12345678</CreateTime>
+  <MsgType><![CDATA[music]]></MsgType>
+  <Music>
+    <Title><![CDATA[TITLE]]></Title>
+    <Description><![CDATA[DESCRIPTION]]></Description>
+    <MusicUrl><![CDATA[MUSIC_Url]]></MusicUrl>
+    <HQMusicUrl><![CDATA[HQ_MUSIC_Url]]></HQMusicUrl>
+    <ThumbMediaId><![CDATA[media_id]]></ThumbMediaId>
+  </Music>
+</xml>
+  类似于这种二级结构(vedio,music,等等)，music的属性在music的类中写，然后再用musicMessage来使用music对象属性
+  
+  
+对于Articles图文消息 这种又嵌套了items的结构的信息
+<xml>
+  <ToUserName><![CDATA[toUser]]></ToUserName>
+  <FromUserName><![CDATA[fromUser]]></FromUserName>
+  <CreateTime>12345678</CreateTime>
+  <MsgType><![CDATA[news]]></MsgType>
+  <ArticleCount>1</ArticleCount>
+  <Articles>
+    <item>
+      <Title><![CDATA[title1]]></Title>
+      <Description><![CDATA[description1]]></Description>
+      <PicUrl><![CDATA[picurl]]></PicUrl>
+      <Url><![CDATA[url]]></Url>
+    </item>
+  </Articles>
+</xml>
+新建了articles类存放items属性，又新建了newsmessage继承了basemessage，其中对不同场景，用数组存放articles
+在NewsMessage类的头部@XStreamAlias("xml")，意为xml数据包，用数组来存放多个的Articles，因为对不同的场景返回不同数量的图文消息
+在Articles中@XStreamAlias("item")，同时对所有属性按照微信平台要求的属性名使用@XStreamAlias("")使其匹配
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

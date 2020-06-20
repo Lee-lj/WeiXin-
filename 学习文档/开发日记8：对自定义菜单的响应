@@ -1,0 +1,120 @@
+{CreateTime=1591873061, 
+EventKey=1, 
+Event=CLICK, 
+ToUserName=gh_ab43150239a0, 
+FromUserName=oj3Wo1T_Bb97sCTFylTV4l15SDWk, 
+MsgType=event}
+null
+
+开发完自定义菜单后点击一级菜单，得到如上的数据，MsgType显示了这个点击也是一种消息，类型为event，类似于对text消息的处理，对event类型消息的处理就可以实现自定义菜单的响应
+
+
+点击菜单拉取消息时的事件推送
+推送XML数据包示例：
+<xml>
+  <ToUserName><![CDATA[toUser]]></ToUserName>
+  <FromUserName><![CDATA[FromUser]]></FromUserName>
+  <CreateTime>123456789</CreateTime>
+  <MsgType><![CDATA[event]]></MsgType>
+  <Event><![CDATA[CLICK]]></Event>
+  <EventKey><![CDATA[EVENTKEY]]></EventKey>
+</xml>
+参数说明：
+
+参数	描述
+ToUserName	开发者微信号
+FromUserName	发送方帐号（一个OpenID）
+CreateTime	消息创建时间 （整型）
+MsgType	消息类型，event
+Event	事件类型，CLICK
+EventKey	事件KEY值，与自定义菜单接口中KEY值对应
+
+
+点击菜单跳转链接时的事件推送:
+参数	描述
+ToUserName	开发者微信号
+FromUserName	发送方帐号（一个OpenID）
+CreateTime	消息创建时间 （整型）
+MsgType	消息类型，event
+Event	事件类型，VIEW
+EventKey	事件KEY值，设置的跳转URL
+
+Service:
+       //用于处理所有的事件和消息的回复，返回的是xml数据包
+	public static String getResponse(Map<String,String> requestMap) {
+		BaseMessage msg=null;
+		String msgType = requestMap.get("MsgType");
+		switch (msgType) {//分类处理消息的类型
+		//此方法专门处理文本消息
+		case "text":
+            msg=dealTextMessage(requestMap);
+			break;
+		case "image"://图片消息
+
+			break;
+		case "voice"://语言消息 
+
+			break;
+		case "video"://视频消息
+
+			break;
+		case "news"://图文消息
+
+			break;
+		case "shortvideo"://短视频消息
+
+			break;
+		case "location"://位置信息
+
+			break;
+		case "link"://链接信息
+
+			break;
+		case "event"://处理自定义菜单的点击消息
+            msg=dealeventMessage(requestMap);
+			break;
+
+		default:
+			break;
+		}
+		if(msg!=null) {
+		      //把文本消息msg处理成XML数据包
+		      return msgtoXML(msg);
+		}else {
+			  return null;
+		}
+	}
+	
+	
+	//此方法专用于处理事件推送问题
+	private static BaseMessage dealeventMessage(Map<String, String> requestMap) {
+        String event = requestMap.get("event");
+		switch (event) {
+		case "CLICK":
+			return dealViewMessage(requestMap);
+        case "VIEW":
+			return dealClickMessage(requestMap);
+
+		default:
+			break;
+		}
+        return null;
+	}
+	
+	//处理自定义菜单事件
+	private static BaseMessage dealClickMessage(Map<String, String> requestMap) {
+        String event = requestMap.get("EventKey");//事件KEY值，与自定义菜单接口中KEY值对应
+        switch (event) {
+		case "1"://点击一级菜单，对应自定义菜单时的KEY值
+			//处理点击了第一个一级菜单
+			return new TextMessage(requestMap, "一级菜单就绪");
+		case "32"://点击菜单，对应自定义菜单时的KEY值
+			//处理点击了第三个一级菜单的第二个子菜单
+			return new TextMessage(requestMap, "二级菜单已就绪");
+		default:
+			break;
+		}
+		return null;
+	}
+	
+	创建自定义菜单的时候就将EventKey发送到了微信服务器上，所以本地的createMenu再改也没有意义

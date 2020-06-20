@@ -1,0 +1,179 @@
+内网穿透:在一个局域网下多台电脑可以访问(所有软件有:花生壳，nat123，ngrok)
+ngrok：1224969865@qq.com  lijun123..
+ http验证用户名:lee   密码:226  本地端口:localhost:8080
+
+out.flush();//flush是把流里的缓冲数据输出
+ out.close();//close是把这个流关闭了，关闭之前会把缓冲的数据都输出。
+
+1.复制隧道ID到ngrok的bat文件，输入，回车、
+
+sts新建Daynamic web项目:
+
+
+然后在ngrok上配置的域名 http://nicelee.free.idcfengye.com 后加入项目名就可访问
+
+
+微信有些端口个人无权限，可以通过开发文档申请测试号取得权限	
+需要设置的URL(地址)是用来接收微信服务器发来的消息的(就是内网穿透的地址带上项目名然后servlet名)
+ http://nicelee.free.idcfengye.com/FirstWeiXin/weixinServlet
+token随便设置为了ljzs，设置后就不能改动	
+
+1.Java中新建Servlet，
+@WebServlet("/wx")
+public class WeiXinServlet extends HttpServlet {
+	private static final long serialVersionUID = 1L;
+	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+                System.out.println("get");
+	}
+                protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+	   System.out.println("post");
+	}得到了检验，微信服务器确实发出了一个get请求
+2.微信要求有校验的方法，确定请求来自于微信服务器:
+protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+		String signature = request.getParameter("signature");// 微信加密签名，signature结合了开发者填写的token参数和请求中的timestamp参数、nonce参数。
+		String timestamp = request.getParameter("timestamp");// 时间戳 
+		String nonce = request.getParameter("nonce");// 随机数 
+		String echostr = request.getParameter("echostr"); //随机字符串
+		//校验请求，看请求是否来源于微信服务器
+		if(WeiXinService.check(timestamp,nonce,signature)) {
+			//System.out.println("接入成功");
+			PrintWriter out=response.getWriter();//原样返回echostr参数
+			out.print(echostr);
+			out.flush();
+			out.close();
+		}else {
+			System.out.println("接入失败");
+		}
+		
+		PrintWriter out = response.getWriter();out.print(echostr);
+		//System.out.println("get");
+	}
+		WeiXinService类的check方法:
+		 private static final String TOKEN="ljzs";//token和微信平台上设置的token一致
+	/**
+	 * 验证签名
+	 * @param timestamp
+	 * @param nonce
+	 * @param signature
+	 * @return
+	 */
+	public static boolean check(String timestamp, String nonce, String signature) {
+    
+      //1）将token、timestamp、nonce三个参数进行字典序排序 
+	  String[] str=new String[] {TOKEN,timestamp,nonce};
+	  Arrays.sort(str);//排序
+      //2）将三个参数字符串拼接成一个字符串进行sha1加密 
+	  String str1=str[0]+str[1]+str[2];//将三个参数字符串拼接成一个字符串
+	  String password=Secret(str1);//password就是加密之后的结果
+	  //System.out.println(password);
+	  //System.out.println(signature);
+      //3）开发者获得加密后的字符串可与signature对比，标识该请求来源于微信
+	  return password.equalsIgnoreCase(signature);
+	}
+	private static String Secret(String src) {
+		//获取一个加密对象
+		try {
+			//获取一个加密对象
+			MessageDigest md=MessageDigest.getInstance("sha1");//sha1加密
+			//加密
+			byte[] digest=md.digest(src.getBytes());
+			char[] chars= {'0','1','2','3','4','5','6','7','8','9','a','b','c','d','e','f'};//十六进制数，来表示数字的高四位第四位
+			StringBuilder sb=new StringBuilder();//用于接收结果的字符串
+			//处理加密结果digest
+			for(byte b:digest) {
+				sb.append(chars[(b>>4)&15]);//将数分为高四位，低四位，整个向右右移4位，高四位变为第四位，与15相与00001111
+				sb.append(chars[b&15]);//低四位直接与15相与
+			}
+			//System.out.println(sb.toString());
+			return sb.toString();
+		} catch (NoSuchAlgorithmException e) {
+			e.printStackTrace();
+		}
+		return null;
+		
+		
+3.接收微信消息是接收一个Post请求带来的xml包，微信对包中的数据做了以下规定:
+         <!--    ToUserName	开发者微信号
+        FromUserName	发送消息方帐号（一个OpenID）
+        CreateTime	消息创建时间 （整型） 单位是秒
+        MsgType	消息类型，文本为text
+        Content	文本消息内容
+        MsgId	消息id，64位整型
+-->
+
+
+在Servlet中对xml包解析:(不用做，只是为了看xml包的格式)
+            ServletInputStream ls=request.getInputStream();
+		            byte[] b=new byte[1024];
+		            int len;
+	            	StringBuilder sb=new StringBuilder();
+	            	while((len=ls.read(b))!=-1) {
+	            		sb.append(new String(b,0,len));
+	            	}
+		            System.out.println(sb.toString());
+		       解析获得的xml包:
+            <xml>
+	            <ToUserName><![CDATA[gh_ab43150239a0]]></ToUserName>
+	            <FromUserName><![CDATA[oj3Wo1T_Bb97sCTFylTV4l15SDWk]]></FromUserName>
+	            <CreateTime>1591602430</CreateTime>
+	            <MsgType><![CDATA[text]]></MsgType>
+	            <Content><![CDATA[鎴戠埍浣燷]></Content>
+                <MsgId>22786269433482407</MsgId>
+            </xml>
+		
+正式的接收消息和事件推送:
+     servlet:
+         Map<String,String> requestMap=WeiXinService.parseRequest(request.getInputStream());//使用WeiXinService的parseRequest方法，希望放入一个请求request就能接收到一个map
+	     System.out.println(requestMap);		
+	 WeiXinService:
+	     //解析xml数据包
+	  public static Map<String, String> parseRequest(InputStream ls) {
+		Map<String,String> map=new HashMap<>();//通过hashmap来建立KV对
+        SAXReader reader=new SAXReader();
+        try {
+            Document document=reader.read(ls);
+            //读取输入流获取文档对象
+        	Element root=document.getRootElement();
+        	//根据文档对象获取根节点
+        	List<Element> elements=root.elements();
+        	//获取根节点的所有子节点，放入一个集合中，对象就是element
+        		
+        	//遍历这些节点，单个的节点就为e
+        	for(Element e:elements) {
+        			map.put(e.getName(), e.getStringValue());
+        		}
+        } catch(DocumentException e){
+        	e.printStackTrace();
+        }
+		return map;
+	}
+	  通过微信发送hello，得到如下数据:
+	  Content=hello,   
+	  CreateTime=1591605486, 
+	  ToUserName=gh_ab43150239a0,
+	  FromUserName=oj3Wo1T_Bb97sCTFylTV4l15SDWk,
+ 	  MsgType=text, 
+  	  MsgId=22786312552376258  测试成功	
+  	 发送语言消息，得到:
+  	 {Format=amr, 
+  	 MediaId=XEYzwBS10ErztdYOSW8v4Z6rw4rdrfBY5FUzV1LV7DqxcZJNzl1dsxfT0LC-dV3j, 
+  	 CreateTime=1591606046, 
+  	 ToUserName=gh_ab43150239a0, 
+  	 FromUserName=oj3Wo1T_Bb97sCTFylTV4l15SDWk, 
+  	 MsgType=voice, 
+  	 MsgId=22786318932944688, 
+  	 Recognition=}
+  	发送位置信息得到:
+  	{Location_X=34.438465, 
+  	CreateTime=1591606154, 
+  	Location_Y=107.899391, 
+  	Label=扶风县黄法路, 
+  	Scale=15, 
+  	ToUserName=gh_ab43150239a0, 
+  	FromUserName=oj3Wo1T_Bb97sCTFylTV4l15SDWk, 
+  	MsgType=location, 
+  	MsgId=22786318975491274}
+  	
+  	 
+		
+		

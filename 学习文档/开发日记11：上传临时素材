@@ -1,0 +1,86 @@
+公众号经常有需要用到一些临时性的多媒体素材的场景，例如在使用接口特别是发送消息时，对多媒体文件、多媒体消息的获取和调用等操作，是通过media_id来进行的。素材管理接口对所有认证的订阅号和服务号开放。通过本接口，公众号可以新增临时素材（即上传临时多媒体文件）。
+注意点：
+1、临时素材media_id是可复用的。
+2、媒体文件在微信后台保存时间为3天，即3天后media_id失效。
+3、上传临时素材的格式、大小限制与公众平台官网一致。
+
+图片（image）: 2M，支持PNG\JPEG\JPG\GIF格式
+语音（voice）：2M，播放长度不超过60s，支持AMR\MP3格式
+视频（video）：10MB，支持MP4格式
+缩略图（thumb）：64KB，支持JPG格式
+
+4、需使用https调用本接口。
+接口调用请求说明
+http请求方式：POST/FORM，使用https https://api.weixin.qq.com/cgi-bin/media/upload?access_token=ACCESS_TOKEN&type=TYPE 调用示例（使用curl命令，用FORM表单方式上传一个多媒体文件）： curl -F media=@test.jpg "https://api.weixin.qq.com/cgi-bin/media/upload?access_token=ACCESS_TOKEN&type=TYPE"
+
+参数说明
+参数	是否必须	说明
+access_token	是	调用接口凭证
+type	是	媒体文件类型，分别有图片（image）、语音（voice）、视频（video）和缩略图（thumb）
+media	是	form-data中媒体文件标识，有filename、filelength、content-type等信息
+返回说明
+
+正确情况下的返回JSON数据包结果如下：
+{"type":"TYPE","media_id":"MEDIA_ID","created_at":123456789}
+参数	描述
+type	媒体文件类型，分别有图片（image）、语音（voice）、视频（video）和缩略图（thumb，主要用于视频与音乐格式的缩略图）
+media_id	媒体文件上传后，获取标识
+created_at	媒体文件上传时间戳
+Service:
+//上传临时素材
+	public static String upload(String path,String type) {//path,type是要上传的文件的路径和类型
+		File file=new File(path);
+		//文件的地址
+		String url="https://api.weixin.qq.com/cgi-bin/media/upload?access_token=ACCESS_TOKEN&type=TYPE";
+		url=url.replace("ACCESS_TOKEN", getAccessToken()).replace("TYPE", type);
+        try {
+			URL urlObject=new URL(url);
+			HttpsURLConnection oc = (HttpsURLConnection) urlObject.openConnection();//开连接，因为使用了https，所以强制转换为https安全连接
+			//设置连接的信息
+			oc.setDoInput(true);
+			oc.setDoOutput(true);//打开输入输出
+			oc.setUseCaches(false);
+			//设置请求头信息
+			oc.setRequestProperty("Connection", "Keep_Alive");
+			oc.setRequestProperty("Charset", "utf8");
+			//设置数据的边界
+			String boundary="-----"+System.currentTimeMillis();//设置一个随机的边界
+			oc.setRequestProperty("Content-Type", "multipart/form-data;boundary="+boundary);
+			OutputStream out = oc.getOutputStream();//获取输出流
+			InputStream in=new FileInputStream(file);//获取文件的输入流
+			//准备数据
+			//第一部分:准备头部信息
+			StringBuilder sb=new StringBuilder();
+			sb.append("--");
+			sb.append(boundary);
+			sb.append("\r\n");
+			sb.append("Content-Disposition:form-data;name=\"media\";filename=\""+file.getName()+"\"\r\n");
+			sb.append("Content-Type:application/octet-stream\r\n\r\n");//内容类型
+			out.write(sb.toString().getBytes());
+			//第二部分:准备文件内容
+			byte[] b=new byte[1024];
+			int len;
+			while ((len=in.read(b))!=-1) {
+				out.write(b,0,len);
+			}
+			//第三部分:准备尾部信息
+			String foot="\r\n--"+boundary+"--\r\n";
+			out.write(foot.getBytes());
+			out.flush();
+			out.close();
+			//读取数据
+			InputStream ls2=oc.getInputStream();
+			StringBuilder response = new StringBuilder();
+			while ((len=ls2.read(b))!=-1) {
+				response.append(new String(b,0,len));
+			}
+			return response.toString();
+        }
+        catch (Exception e) {
+        	e.printStackTrace();
+        }
+        return null;
+	}
+}
+获取临时素材的方式就是往url上发送get请求，自己写
+

@@ -1,0 +1,72 @@
+需要的jar包:xstream.jar（包含源码等jar）
+
+        Map<String,String> map=new HashMap<>();
+		map.put("ToUserName","226");
+		map.put("FromUserName","8080");
+		map.put("MessageType","text");
+		TextMessage tm=new TextMessage(map,"求你了");
+		System.out.println(tm);
+
+
+        XStream stream=new XStream();
+		String xml=stream.toXML(tm);
+		System.out.println(xml);直接调用toXML方法就可以打成xml包
+		
+		得到如下xml包；
+      <entity.TextMessage>
+  	    <toUserName>8080</toUserName>
+  	    <fromUserName>226</fromUserName>
+  	    <createTime>1591698244</createTime>
+  	    <messageType>text</messageType>
+  	    <content>求你了</content>
+	  </entity.TextMessage>
+	  
+	          在TextMessage.class这个类前加上注解 @XStreamAlias("xml")
+	          然后使用stream.processAnnotations(TextMessage.class);方法，就可以将XML数据包的名改为注解中指定的值
+	    XStream stream=new XStream();
+		stream.processAnnotations(TextMessage.class);
+		String xml=stream.toXML(tm);
+		System.out.println(xml);
+	         得到结果如下:
+	   <xml>
+  	   <toUserName>8080</toUserName>
+	     <fromUserName>226</fromUserName>
+ 	    <createTime>1591698548</createTime>
+	     <messageType>text</messageType>
+ 	    <content>求你了</content>
+	   </xml>
+	   
+	   同理，可使用@XStreamAlias("")来指定数据包中的属性名的大写,在不同消息特有的属性前也加上注解实现大写
+	   在BaseMessage的四个基本属性中加入注解指定大写;
+	   @XStreamAlias("ToUserName")
+	   private String toUserName;
+	   @XStreamAlias("FromUserName")
+	   private String fromUserName;
+	   @XStreamAlias("CreateTime")
+	   private String createTime;
+	   @XStreamAlias("MessageType")
+	   private String messageType;
+	   
+	   
+	   
+	  具体的实现方法是在
+	  //用于处理所有的事件和消息的回复，返回的是xml数据包
+	public static String getResponse(Map<String,String> requestMap) 
+	 处理完某个类型的数据之后，将返回值返回到@XStreamAlias("")注解处理的方法中:
+	 //把文本消息msg处理成XML数据包
+		return msgtoXML(msg);
+		
+		然后用此方法将数据打成xml包：
+		//把文本消息msg处理成XML数据包
+	private static String msgtoXML(BaseMessage msg) {
+		// 设置 需要处理的@XStreamAlias("")注解 的类
+		XStream stream = new XStream();
+		stream.processAnnotations(TextMessage.class);
+		stream.processAnnotations(ImageMessage.class);
+		stream.processAnnotations(MusicMessage.class);
+		stream.processAnnotations(NewsMessage.class);
+		stream.processAnnotations(VideoMessage.class);
+		stream.processAnnotations(VoiceMessage.class);
+		String xml = stream.toXML(msg);
+        return xml;
+	}
