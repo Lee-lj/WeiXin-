@@ -1,0 +1,7 @@
+eclipse.preferences.version=1
+encoding//WebContent/index.jsp=UTF-8
+encoding//src/Servlet/WeiXinServlet.java=UTF-8
+encoding//src/manager/TemplateMessageManager.java=UTF-8
+encoding//src/robot/CreateMenu.java=UTF-8
+encoding//src/robot/Robot.java=UTF-8
+encoding//src/test/testWx.java=UTF-8

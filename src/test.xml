@@ -1,0 +1,25 @@
+<!--    ToUserName	开发者微信号
+        FromUserName	发送消息方帐号（一个OpenID）
+        CreateTime	消息创建时间 （整型） 单位是秒
+        MsgType	消息类型，文本为text
+        Content	文本消息内容
+        MsgId	消息id，64位整型
+-->
+
+<!--<xml>
+	<ToUserName><![CDATA[gh_ab43150239a0]]></ToUserName>
+	<FromUserName><![CDATA[oj3Wo1T_Bb97sCTFylTV4l15SDWk]]></FromUserName>
+	<CreateTime>1591602430</CreateTime>
+	<MsgType><![CDATA[text]]></MsgType>
+	<Content><![CDATA[鎴戠埍浣燷]></Content>
+    <MsgId>22786269433482407</MsgId>
+</xml>
+
+
+{Content=hello,   
+CreateTime=1591605486, 
+ToUserName=gh_ab43150239a0,
+ FromUserName=oj3Wo1T_Bb97sCTFylTV4l15SDWk,
+  MsgType=text, 
+  MsgId=22786312552376258}
+-->
